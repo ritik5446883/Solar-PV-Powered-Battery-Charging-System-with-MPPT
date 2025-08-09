@@ -1,9 +1,9 @@
-# ☀️ Design of Battery Charging from Solar Using Buck Converters with MPPT Algorithm
+# Solar-PV-Powered-Battery-Charging-System-with-MPPT
 
-## 📌 Abstract
+## Overview
 Photovoltaic power generation systems implement an effective utilization of solar energy, but have very low conversion efficiency. The major problem in solar photovoltaic systems is to maintain the DC output power from the panel as constant. Irradiation and temperature are the two factors which will change the output power of the panel. In this article, it is shown that for charging lead-acid batteries from solar panels, MPPT can be achieved by the Perturb and Observe (P&O) algorithm. MPPT is used in photovoltaic systems to regulate the photovoltaic array output. A buck converter is utilized as a DC-DC converter for the charge controller. It is used to match the impedance of the solar panel and battery to deliver maximum power. Voltage and current from the solar panel are sensed and the duty cycle of the gating signal is varied accordingly by the algorithm to attain maximum power transfer. It is obtained by using MATLAB Simulink Model.
 
-**Keywords:** Photovoltaic (PV), Buck converter, MPPT, P&O algorithm, Battery, MATLAB, Simulink
+
 
 ---
 
@@ -41,13 +41,83 @@ Cycle life refers to the number of complete charge-discharge cycles a battery ca
 
 ---
 
-## 4. Overview of the System
-The system senses battery charging current and uses MPPT to ensure maximum power output from the solar panel. A buck converter is employed for DC-DC step-down operation. In standalone PV systems, buck converters are efficient for battery charging applications.
+## 🛠 Key Features
+- **Perturb and Observe (P&O) MPPT Algorithm** for efficient MPP tracking.
+- **Buck Converter** for stepping down PV voltage to match battery charging requirements.
+- Works with **12V battery systems** (adaptable to other voltages).
+- Responds to **real-time changes** in solar irradiance and temperature.
+- MATLAB function implementation for portability and integration.
+- Simulink model for visual testing and result analysis.
+- Maintains **battery safe charging profile** while maximizing PV efficiency.
 
 ---
 
-## 5. Buck Converter
-A buck converter is a type of DC-DC converter that steps down a higher DC input voltage to a lower DC output voltage.
+## ⚡ Working Principle
 
-### 5.1 Operation
-- **Switch Closed:** Current flows through the inductor to the load, and the
+### 1. Solar PV Output Measurement
+The PV array's **voltage (V)** and **current (I)** are continuously measured to determine instantaneous power:
+\[
+P = V \times I
+\]
+
+### 2. MPPT Controller – Perturb and Observe Method
+The P&O algorithm works as follows:
+1. **Perturb**: Slightly change the duty cycle `D` of the Buck Converter.
+2. **Observe**: Measure the resulting change in PV power (`ΔP`).
+3. **Decision**:
+   - If `ΔP > 0` → Continue in the same direction (moving toward MPP).
+   - If `ΔP < 0` → Reverse the change direction (moving away from MPP).
+4. **Repeat Continuously** to adapt to changing conditions.
+
+### 3. Buck Converter Voltage Regulation
+- The **Buck Converter** steps down the PV voltage to match the battery voltage.
+- MOSFET switching in the Buck Converter is controlled by the **duty cycle** from the MPPT controller.
+- Output voltage is smoothed with an LC filter to provide stable charging current.
+
+---
+
+## 🔧 MATLAB MPPT Function (`DutyRatio.m`)
+```matlab
+function D = DutyRatio(V, I)
+    Dmax = 0.95;
+    Dmin = 0;
+    Dinit = 0.95;
+    deltaD = 0.0001;
+    persistent Vold Pold Dold;
+
+    if isempty(Vold)
+        Vold = 0;
+        Pold = 0;
+        Dold = Dinit;
+    end
+
+    P = V * I;
+    dV = V - Vold;
+    dP = P - Pold;
+
+    if dP ~= 0
+        if dP < 0
+            if dV < 0
+                D = Dold - deltaD;
+            else
+                D = Dold + deltaD;
+            end
+        else
+            if dV < 0
+                D = Dold + deltaD;
+            else
+                D = Dold - deltaD;
+            end
+        end
+    else
+        D = Dold;
+    end
+
+    if D >= Dmax || D <= Dmin
+        D = Dold;
+    end
+
+    Dold = D;
+    Vold = V;
+    Pold = P;
+end
